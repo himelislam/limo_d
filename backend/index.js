@@ -9,6 +9,7 @@ const vehicles = require('./routes/vehicles');
 const drivers = require('./routes/drivers');
 const passengers = require('./routes/passengers');
 const trips = require('./routes/trips');
+const auth = require('./routes/auth');
 
 // Connect to database
 connectDB();
@@ -25,6 +26,7 @@ app.use(cors({
 
 
 // Mount routers
+app.use('/api/auth', auth);
 app.use('/api/vehicles', vehicles);
 app.use('/api/drivers', drivers);
 app.use('/api/passengers', passengers);

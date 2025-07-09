@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 // require('dotenv').config();
+const { mongo: { uri } } = require("./env");
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(`mongodb+srv://himel7100:fNwyaH2VNqxjp94m@limodcluster.zs6tdfo.mongodb.net/?retryWrites=true&w=majority&appName=limodCluster`, {
+    await mongoose.connect(uri, {
     //   useNewUrlParser: true,
     //   useUnifiedTopology: true,
     });

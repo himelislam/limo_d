@@ -7,10 +7,12 @@ const {
   deleteDriver
 } = require('../controllers/driverController');
 
+const { protect, authorize } = require('../middlewares/auth');
+
 const router = express.Router();
 
 router.route('/')
-  .get(getDrivers)
+  .get(protect, authorize('admin', 'owner'), getDrivers)
   .post(createDriver);
 
 router.route('/:id')
