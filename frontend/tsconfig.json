@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+      "target": "es6", /* ECMAScript target version */
+      "module": "commonjs", /* Specify module code generation */
+      "jsx": "react-jsx", /* Enable JSX and choose React's modern JSX runtime */
+      "allowJs": true, /* Allow JavaScript files to be compiled */
+      "checkJs": false, /* Disable type checking for JavaScript files */
+      "outDir": "./dist", /* Output directory for compiled files */
+      "rootDir": "./src", /* Root directory of source files */
+      "strict": true, /* Enable strict type checking */
+      "esModuleInterop": true, /* Enable compatibility with ES modules */
+      "skipLibCheck": true, /* Skip type checking of declaration files */
+      "forceConsistentCasingInFileNames": true, /* Ensure consistent casing in imports */
+      "baseUrl": ".",
+      "paths": {
+            "@/*": [
+                "./src/*"
+            ]
+        },
+    },
+    "include": ["src/**/*"], /* Include all files in the 'src' folder */
+    "exclude": ["node_modules", "dist"] /* Exclude 'node_modules' and the output directory */
+}
