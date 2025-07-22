@@ -14,13 +14,17 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
-        console.log("stored token")
         try {
-          const userData = await getCurrentUser(storedToken);
+          const response = await getCurrentUser(storedToken);
+          // Handle the response format from backend
+          const userData = response.data || response;
           setUser(userData);
           setToken(storedToken);
         } catch (err) {
+          console.error('Auth check failed:', err);
           localStorage.removeItem('token');
+          setUser(null);
+          setToken(null);
         }
       }
       setLoading(false);
@@ -29,22 +33,29 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data, token } = await loginUser(email, password);
-    setUser(data);
-    setToken(token);
-    localStorage.setItem('token', token);
-    navigate(`/${user.role}/dashboard`);
+    try {
+      const { data, token } = await loginUser(email, password);
+      setUser(data);
+      setToken(token);
+      localStorage.setItem('token', token);
+      navigate(`/${data.role}/dashboard`);
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   };
 
   const register = async (userData) => {
-    const { data, token } = await registerUser(userData);
-    setUser(data);
-    setToken(token);
-    console.log('token set', token);
-    console.log('user set', data);
-    localStorage.setItem('token', token);
-    navigate(`/${user.role}/dashboard`);
-    console.log("first")
+    try {
+      const { data, token } = await registerUser(userData);
+      setUser(data);
+      setToken(token);
+      localStorage.setItem('token', token);
+      navigate(`/${data?.role}/dashboard`);
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
