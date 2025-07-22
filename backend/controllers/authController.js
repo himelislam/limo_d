@@ -1,11 +1,11 @@
-const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const { promisify } = require('util');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
-// Generate JWT token
-const signToken = id => {
+// Helper function to sign JWT token
+const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+    expiresIn: process.env.JWT_EXPIRES_IN || '30d'
   });
 };
 
@@ -25,11 +25,14 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create user
     const user = await User.create({
       name,
       email,
-      password,
+      password: hashedPassword,
       phone,
       role: role || 'passenger'
     });
@@ -48,18 +51,10 @@ exports.register = async (req, res) => {
       }
     });
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map(val => val.message);
-      return res.status(400).json({
-        success: false,
-        error: messages
-      });
-    } else {
-      return res.status(500).json({
-        success: false,
-        error: 'Server Error'
-      });
-    }
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
   }
 };
 
@@ -79,8 +74,17 @@ exports.login = async (req, res) => {
     }
 
     // Check if user exists and password is correct
-    const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials'
@@ -88,7 +92,7 @@ exports.login = async (req, res) => {
     }
 
     // Check if user is active
-    if (!user.isActive) {
+    if (user.status === 'inactive') {
       return res.status(401).json({
         success: false,
         error: 'Account is deactivated'
@@ -116,23 +120,12 @@ exports.login = async (req, res) => {
   }
 };
 
-// @desc    Logout user (client-side token clearing)
-// @route   GET /api/auth/logout
-// @access  Private
-exports.logout = (req, res) => {
-  res.status(200).json({
-    success: true,
-    data: {}
-  });
-};
-
-// @desc    Get current logged-in user
+// @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-
+    const user = await User.findById(req.user.id).select('-password');
     res.status(200).json({
       success: true,
       data: user
@@ -143,4 +136,14 @@ exports.getMe = async (req, res) => {
       error: 'Server Error'
     });
   }
+};
+
+// @desc    Logout user (client-side token clearing)
+// @route   GET /api/auth/logout
+// @access  Private
+exports.logout = (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {}
+  });
 };
