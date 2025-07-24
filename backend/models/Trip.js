@@ -4,11 +4,16 @@ const tripSchema = new mongoose.Schema({
   vehicle: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vehicle',
-    required: true
+    required: false
   },
   driver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Driver',
+    required: false
+  },
+  passenger: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   origin: {
@@ -19,32 +24,59 @@ const tripSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  startTime: {
+  scheduledTime: {
     type: Date,
     required: true
+  },
+  startTime: {
+    type: Date
   },
   endTime: {
     type: Date
   },
   distance: {
-    type: Number, // in km
-    required: true,
+    type: Number,
     min: 0
   },
   fare: {
     type: Number,
-    required: true,
     min: 0
   },
-  passengers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Passenger'
-  }],
+  estimatedDuration: {
+    type: Number, // in minutes
+    min: 0
+  },
+  passengerCount: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1
+  },
   status: {
     type: String,
-    enum: ['scheduled', 'in-progress', 'completed', 'cancelled'],
-    default: 'scheduled'
+    enum: ['pending', 'scheduled', 'on-the-way', 'started', 'completed', 'cancelled'],
+    default: 'pending'
+  },
+  notes: {
+    type: String
+  },
+  assignmentNotes: {
+    type: String
+  },
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5
+  },
+  feedback: {
+    type: String
   }
 }, { timestamps: true });
+
+// Index for efficient queries
+tripSchema.index({ passenger: 1, status: 1 });
+tripSchema.index({ driver: 1, status: 1 });
+tripSchema.index({ vehicle: 1, scheduledTime: 1 });
+tripSchema.index({ status: 1, scheduledTime: 1 });
 
 module.exports = mongoose.model('Trip', tripSchema);
