@@ -23,15 +23,19 @@ export default function PassengerDashboard() {
 
   const queryClient = useQueryClient();
 
-  const { data: trips = [] } = useQuery({
+  const { data: tripsRes = [] } = useQuery({
     queryKey: ['passenger-trips'],
     queryFn: getTrips,
   });
 
-  const { data: vehicles = [] } = useQuery({
+  const trips = tripsRes?.data ?? [];
+
+  const { data: vehiclesRes = [] } = useQuery({
     queryKey: ['vehicles'],
     queryFn: getVehicles,
   });
+
+  const vehicles = vehiclesRes?.data ?? [];
 
   const myTrips = trips.filter(trip => trip.passenger === user?.id);
   const upcomingTrips = myTrips.filter(trip => 

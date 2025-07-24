@@ -8,10 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function DriverDashboard() {
   const { user } = useAuth();
   
-  const { data: trips = [] } = useQuery({
+  const { data: tripsRes = [] } = useQuery({
     queryKey: ['driver-trips'],
     queryFn: getTrips,
   });
+  const trips = tripsRes.data ?? [];
 
   const myTrips = trips.filter(trip => trip.driver === user?.id);
   const todayTrips = myTrips.filter(trip => 

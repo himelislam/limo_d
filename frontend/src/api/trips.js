@@ -6,13 +6,40 @@ const getAuthHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem('token')}`,
 });
 
-export const getTrips = async () => {
+export const getTrips = async (params = {}) => {
   try {
-    const response = await axios.get(API_URL, { headers: getAuthHeaders() });
+    const response = await axios.get(API_URL, { 
+      headers: getAuthHeaders(),
+      params 
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching trips:', error);
-    return [];
+    return { data: [] };
+  }
+};
+
+export const getPendingTrips = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/pending`, { 
+      headers: getAuthHeaders() 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching pending trips:', error);
+    return { data: [] };
+  }
+};
+
+export const getAvailableResources = async (tripId) => {
+  try {
+    const response = await axios.get(`${API_URL}/${tripId}/available-resources`, { 
+      headers: getAuthHeaders() 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching available resources:', error);
+    throw error;
   }
 };
 
@@ -26,17 +53,40 @@ export const createTrip = async (tripData) => {
   }
 };
 
-export const updateTrip = async (id, tripData) => {
+export const assignTrip = async (tripId, assignmentData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, tripData, { headers: getAuthHeaders() });
+    const response = await axios.put(`${API_URL}/${tripId}/assign`, assignmentData, { 
+      headers: getAuthHeaders() 
+    });
     return response.data;
   } catch (error) {
-    console.error('Error updating trip:', error);
+    console.error('Error assigning trip:', error);
     throw error;
   }
 };
 
-export const deleteTrip = async (id) => {
-  const response = await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeaders() });
-  return response.data;
+export const updateTripStatus = async (tripId, statusData) => {
+  try {
+    const response = await axios.put(`${API_URL}/${tripId}/status`, statusData, { 
+      headers: getAuthHeaders() 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating trip status:', error);
+    throw error;
+  }
 };
+
+export const addTripFeedback = async (tripId, feedbackData) => {
+  try {
+    const response = await axios.put(`${API_URL}/${tripId}/feedback`, feedbackData, { 
+      headers: getAuthHeaders() 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding feedback:', error);
+    throw error;
+  }
+};
+
+export const updateTrip = updateTripStatus; // Backward compatibility

@@ -11,10 +11,12 @@ export default function DriverTrips() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: trips = [], isLoading } = useQuery({
+  const { data: tripsRes = [], isLoading } = useQuery({
     queryKey: ['driver-trips'],
     queryFn: getTrips,
   });
+
+  const trips = tripsRes?.data ?? [];
 
   const updateTripMutation = useMutation({
     mutationFn: ({ id, data }) => updateTrip(id, data),

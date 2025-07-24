@@ -16,7 +16,7 @@ export default function OwnerDrivers() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
+    contactNumber: '',
     licenseNumber: '',
     experience: '',
     status: 'available',
@@ -61,7 +61,7 @@ export default function OwnerDrivers() {
     setFormData({
       name: '',
       email: '',
-      phone: '',
+      contactNumber: '',
       licenseNumber: '',
       experience: '',
       status: 'available',
@@ -83,7 +83,7 @@ export default function OwnerDrivers() {
     setFormData({
       name: driver.name,
       email: driver.email,
-      phone: driver.phone,
+      contactNumber: driver.contactNumber,
       licenseNumber: driver.licenseNumber,
       experience: driver.experience?.toString() || '',
       status: driver.status,
@@ -133,22 +133,11 @@ export default function OwnerDrivers() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">Email</Label>
+                  <Label htmlFor="contactNumber" className="text-right">Contact</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    id="contactNumber"
+                    value={formData.contactNumber}
+                    onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                     className="col-span-3"
                     required
                   />
@@ -225,12 +214,8 @@ export default function OwnerDrivers() {
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center text-sm">
-                          <Mail className="mr-1 h-3 w-3" />
-                          {driver.email}
-                        </div>
-                        <div className="flex items-center text-sm">
                           <Phone className="mr-1 h-3 w-3" />
-                          {driver.phone}
+                          {driver.contactNumber}
                         </div>
                       </div>
                     </TableCell>

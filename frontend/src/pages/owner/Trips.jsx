@@ -192,13 +192,13 @@ export default function OwnerTrips() {
                 {trips.map((trip) => (
                   <TableRow key={trip._id}>
                     <TableCell className="font-medium">
-                      {trip.from} → {trip.to}
+                      {trip?.from} → {trip?.to}
                     </TableCell>
-                    <TableCell>{trip.passenger?.name || 'Unknown'}</TableCell>
-                    <TableCell>{trip.driver?.name || 'Unassigned'}</TableCell>
+                    <TableCell>{trip?.passengers?.[0]?.name || 'Unknown'}</TableCell>
+                    <TableCell>{trip?.driver?.name || 'Unassigned'}</TableCell>
                     <TableCell>
-                      {trip.vehicle ? 
-                        `${trip.vehicle.make} ${trip.vehicle.model}` : 
+                      {trip?.vehicle?.status === "active" ? 
+                        `${trip?.vehicle?.type} ${trip.vehicle?.licensePlate}` : 
                         'Not assigned'
                       }
                     </TableCell>
