@@ -23,9 +23,10 @@ export default function PassengerDashboard() {
 
   const queryClient = useQueryClient();
 
-  const { data: tripsRes = [] } = useQuery({
+  const { data: tripsRes = []} = useQuery({
     queryKey: ['passenger-trips'],
     queryFn: getTrips,
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const trips = tripsRes?.data ?? [];
@@ -39,7 +40,7 @@ export default function PassengerDashboard() {
 
   const myTrips = trips.filter(trip => trip.passenger === user?.id);
   const upcomingTrips = myTrips.filter(trip => 
-    trip.status === 'scheduled' || trip.status === 'in_progress'
+    ['pending', 'scheduled', 'on-the-way', 'started'].includes(trip.status)
   );
   const completedTrips = myTrips.filter(trip => trip.status === 'completed');
 
@@ -196,23 +197,47 @@ export default function PassengerDashboard() {
               ) : (
                 upcomingTrips.map((trip) => (
                   <div key={trip._id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{trip.from} → {trip.to}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="font-medium">{trip.origin} → {trip.destination}</p>
+                        <Badge variant={getStatusBadgeVariant(trip.status)}>
+                          {trip.status.replace('-', ' ')}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        {trip.scheduledTime ? 
-                          new Date(trip.scheduledTime).toLocaleString() : 
-                          'Time not set'
-                        }
+                        {trip.scheduledTime ? new Date(trip.scheduledTime).toLocaleString() : 'Time TBD'}
                       </p>
                       {trip.driver && (
-                        <p className="text-sm text-muted-foreground">
-                          Driver: {trip.driver.name}
-                        </p>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          <span className="font-medium">Driver:</span> {trip.driver.name}
+                          {trip.driver.phone && <span className="ml-2">📞 {trip.driver.phone}</span>}
+                        </div>
+                      )}
+                      {trip.vehicle && (
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">Vehicle:</span> {trip.vehicle.make} {trip.vehicle.model} ({trip.vehicle.licensePlate})
+                        </div>
+                      )}
+                      {trip.fare && (
+                        <div className="text-sm font-medium text-green-600 mt-1">
+                          Fare: ${trip.fare}
+                        </div>
                       )}
                     </div>
-                    <Badge variant={trip.status === 'in_progress' ? 'default' : 'secondary'}>
-                      {trip.status.replace('_', ' ')}
-                    </Badge>
+                    <div className="ml-4">
+                      {trip.status === 'pending' && (
+                        <Badge variant="secondary">Awaiting Assignment</Badge>
+                      )}
+                      {trip.status === 'scheduled' && (
+                        <Badge variant="default">Confirmed</Badge>
+                      )}
+                      {trip.status === 'on-the-way' && (
+                        <Badge variant="default" className="bg-blue-600">Driver En Route</Badge>
+                      )}
+                      {trip.status === 'started' && (
+                        <Badge variant="destructive">Trip in Progress</Badge>
+                      )}
+                    </div>
                   </div>
                 ))
               )}

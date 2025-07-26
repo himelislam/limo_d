@@ -1,92 +1,43 @@
-import axios from 'axios';
+import api from './index';
 
-const API_URL = 'http://localhost:4000/api/trips';
-
-const getAuthHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
-});
+const API_URL = '/trips';
 
 export const getTrips = async (params = {}) => {
-  try {
-    const response = await axios.get(API_URL, { 
-      headers: getAuthHeaders(),
-      params 
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching trips:', error);
-    return { data: [] };
-  }
+  const response = await api.get(API_URL, { params });
+  return response.data;
 };
 
-export const getPendingTrips = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/pending`, { 
-      headers: getAuthHeaders() 
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching pending trips:', error);
-    return { data: [] };
-  }
-};
-
-export const getAvailableResources = async (tripId) => {
-  try {
-    const response = await axios.get(`${API_URL}/${tripId}/available-resources`, { 
-      headers: getAuthHeaders() 
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching available resources:', error);
-    throw error;
-  }
+export const getMyTrips = async (params = {}) => {
+  const response = await api.get(`${API_URL}/my-trips`, { params });
+  return response.data;
 };
 
 export const createTrip = async (tripData) => {
-  try {
-    const response = await axios.post(API_URL, tripData, { headers: getAuthHeaders() });
-    return response.data;
-  } catch (error) {
-    console.error('Error creating trip:', error);
-    throw error;
-  }
+  const response = await api.post(API_URL, tripData);
+  return response.data;
 };
 
 export const assignTrip = async (tripId, assignmentData) => {
-  try {
-    const response = await axios.put(`${API_URL}/${tripId}/assign`, assignmentData, { 
-      headers: getAuthHeaders() 
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error assigning trip:', error);
-    throw error;
-  }
+  const response = await api.put(`${API_URL}/${tripId}/assign`, assignmentData);
+  return response.data;
 };
 
 export const updateTripStatus = async (tripId, statusData) => {
-  try {
-    const response = await axios.put(`${API_URL}/${tripId}/status`, statusData, { 
-      headers: getAuthHeaders() 
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error updating trip status:', error);
-    throw error;
-  }
+  const response = await api.put(`${API_URL}/${tripId}/status`, statusData);
+  return response.data;
 };
 
-export const addTripFeedback = async (tripId, feedbackData) => {
-  try {
-    const response = await axios.put(`${API_URL}/${tripId}/feedback`, feedbackData, { 
-      headers: getAuthHeaders() 
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error adding feedback:', error);
-    throw error;
-  }
+export const addFeedback = async (tripId, feedbackData) => {
+  const response = await api.put(`${API_URL}/${tripId}/feedback`, feedbackData);
+  return response.data;
 };
 
-export const updateTrip = updateTripStatus; // Backward compatibility
+export const getPendingTrips = async () => {
+  const response = await api.get(`${API_URL}/pending`);
+  return response.data;
+};
+
+export const getAvailableResources = async (tripId) => {
+  const response = await api.get(`${API_URL}/${tripId}/available-resources`);
+  return response.data;
+};

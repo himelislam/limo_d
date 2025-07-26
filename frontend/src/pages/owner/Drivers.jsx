@@ -16,7 +16,8 @@ export default function OwnerDrivers() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    contactNumber: '',
+    password: '',
+    phone: '',
     licenseNumber: '',
     experience: '',
     status: 'available',
@@ -61,7 +62,8 @@ export default function OwnerDrivers() {
     setFormData({
       name: '',
       email: '',
-      contactNumber: '',
+      password: '',
+      phone: '',
       licenseNumber: '',
       experience: '',
       status: 'available',
@@ -71,10 +73,31 @@ export default function OwnerDrivers() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    const submitData = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      licenseNumber: formData.licenseNumber,
+      experience: formData.experience ? parseInt(formData.experience) : 0,
+      status: formData.status,
+    };
+
+    // Only include password if it's provided
+    if (formData.password) {
+      submitData.password = formData.password;
+    }
+
     if (editingDriver) {
-      updateMutation.mutate({ id: editingDriver._id, data: formData });
+      updateMutation.mutate({ id: editingDriver._id, data: submitData });
     } else {
-      createMutation.mutate(formData);
+      // For new drivers, password is required
+      if (!formData.password) {
+        alert('Password is required for new drivers');
+        return;
+      }
+      submitData.password = formData.password;
+      createMutation.mutate(submitData);
     }
   };
 
@@ -83,8 +106,9 @@ export default function OwnerDrivers() {
     setFormData({
       name: driver.name,
       email: driver.email,
-      contactNumber: driver.contactNumber,
-      licenseNumber: driver.licenseNumber,
+      password: '', // Don't populate password
+      phone: driver.phone || '',
+      licenseNumber: driver.licenseNumber || '',
       experience: driver.experience?.toString() || '',
       status: driver.status,
     });
@@ -133,11 +157,36 @@ export default function OwnerDrivers() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="contactNumber" className="text-right">Contact</Label>
+                  <Label htmlFor="email" className="text-right">Email</Label>
                   <Input
-                    id="contactNumber"
-                    value={formData.contactNumber}
-                    onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">
+                    Password {editingDriver && '(leave blank to keep current)'}
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="col-span-3"
+                    required={!editingDriver}
+                    minLength="6"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="phone" className="text-right">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="col-span-3"
                     required
                   />

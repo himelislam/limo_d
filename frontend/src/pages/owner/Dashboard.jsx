@@ -166,7 +166,14 @@ export default function OwnerDashboard() {
                         {trip.vehicle && (
                           <div className="text-sm">
                             <span className="font-medium text-blue-600">Pre-selected Vehicle:</span>
-                            <span className="ml-2">{trip.vehicle.type} ({trip.vehicle.licensePlate})</span>
+                            <span className="ml-2">{trip.vehicle.make} {trip.vehicle.model} ({trip.vehicle.licensePlate})</span>
+                          </div>
+                        )}
+
+                        {trip.driver && (
+                          <div className="text-sm">
+                            <span className="font-medium text-green-600">Assigned Driver:</span>
+                            <span className="ml-2">{trip.driver.name} ({trip.driver.phone})</span>
                           </div>
                         )}
 

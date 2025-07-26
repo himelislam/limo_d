@@ -18,9 +18,9 @@ export default function OwnerVehicles() {
     model: '',
     year: '',
     licensePlate: '',
-    capacity: '',
+    seatingCapacity: '',
     type: 'sedan',
-    status: 'available',
+    status: 'active',
     fuelType: 'gasoline',
     mileage: '',
   });
@@ -65,9 +65,9 @@ export default function OwnerVehicles() {
       model: '',
       year: '',
       licensePlate: '',
-      capacity: '',
+      seatingCapacity: '',
       type: 'sedan',
-      status: 'available',
+      status: 'active',
       fuelType: 'gasoline',
       mileage: '',
     });
@@ -76,23 +76,36 @@ export default function OwnerVehicles() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    const submitData = {
+      make: formData.make,
+      model: formData.model,
+      year: parseInt(formData.year),
+      licensePlate: formData.licensePlate.toUpperCase(),
+      seatingCapacity: parseInt(formData.seatingCapacity),
+      type: formData.type,
+      status: formData.status,
+      fuelType: formData.fuelType,
+      mileage: formData.mileage ? parseInt(formData.mileage) : 0,
+    };
+
     if (editingVehicle) {
-      updateMutation.mutate({ id: editingVehicle._id, data: formData });
+      updateMutation.mutate({ id: editingVehicle._id, data: submitData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(submitData);
     }
   };
 
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle);
     setFormData({
-      make: vehicle.make,
-      model: vehicle.model,
-      year: vehicle.year.toString(),
-      licensePlate: vehicle.licensePlate,
-      capacity: vehicle.capacity.toString(),
-      type: vehicle.type,
-      status: vehicle.status,
+      make: vehicle.make || '',
+      model: vehicle.model || '',
+      year: vehicle.year?.toString() || '',
+      licensePlate: vehicle.licensePlate || '',
+      seatingCapacity: vehicle.seatingCapacity?.toString() || '',
+      type: vehicle.type || 'sedan',
+      status: vehicle.status || 'active',
       fuelType: vehicle.fuelType || 'gasoline',
       mileage: vehicle.mileage?.toString() || '',
     });
@@ -107,9 +120,9 @@ export default function OwnerVehicles() {
 
   const vehicleStats = {
     total: vehicles.length,
-    available: vehicles.filter(v => v.status === 'available').length,
-    inUse: vehicles.filter(v => v.status === 'in_use').length,
+    active: vehicles.filter(v => v.status === 'active').length,
     maintenance: vehicles.filter(v => v.status === 'maintenance').length,
+    retired: vehicles.filter(v => v.status === 'retired').length,
   };
 
   return (
@@ -179,12 +192,14 @@ export default function OwnerVehicles() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="capacity" className="text-right">Capacity</Label>
+                  <Label htmlFor="seatingCapacity" className="text-right">Seating Capacity</Label>
                   <Input
-                    id="capacity"
+                    id="seatingCapacity"
                     type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                    min="1"
+                    max="50"
+                    value={formData.seatingCapacity}
+                    onChange={(e) => setFormData({ ...formData, seatingCapacity: e.target.value })}
                     className="col-span-3"
                     required
                   />
@@ -223,10 +238,11 @@ export default function OwnerVehicles() {
                   <Input
                     id="mileage"
                     type="number"
+                    min="0"
                     value={formData.mileage}
                     onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
                     className="col-span-3"
-                    placeholder="Current mileage"
+                    placeholder="Current mileage (km)"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -236,9 +252,9 @@ export default function OwnerVehicles() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="in_use">In Use</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="retired">Retired</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -265,20 +281,11 @@ export default function OwnerVehicles() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available</CardTitle>
+            <CardTitle className="text-sm font-medium">Active</CardTitle>
             <div className="h-4 w-4 bg-green-500 rounded-full" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{vehicleStats.available}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Use</CardTitle>
-            <div className="h-4 w-4 bg-blue-500 rounded-full" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{vehicleStats.inUse}</div>
+            <div className="text-2xl font-bold">{vehicleStats.active}</div>
           </CardContent>
         </Card>
         <Card>
@@ -288,6 +295,15 @@ export default function OwnerVehicles() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{vehicleStats.maintenance}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Retired</CardTitle>
+            <div className="h-4 w-4 bg-red-500 rounded-full" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{vehicleStats.retired}</div>
           </CardContent>
         </Card>
       </div>
@@ -309,6 +325,7 @@ export default function OwnerVehicles() {
                   <TableHead>Type</TableHead>
                   <TableHead>Capacity</TableHead>
                   <TableHead>Fuel</TableHead>
+                  <TableHead>Mileage</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -327,7 +344,7 @@ export default function OwnerVehicles() {
                     <TableCell>
                       <div className="flex items-center">
                         <Users className="mr-1 h-3 w-3" />
-                        {vehicle.capacity}
+                        {vehicle.seatingCapacity}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -337,11 +354,17 @@ export default function OwnerVehicles() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${vehicle.status === 'available' ? 'bg-green-100 text-green-800' :
-                          vehicle.status === 'in_use' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
-                        }`}>
-                        {vehicle.status.replace('_', ' ')}
+                      <div className="text-sm">
+                        {vehicle.mileage ? `${vehicle.mileage.toLocaleString()} km` : '0 km'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        vehicle.status === 'active' ? 'bg-green-100 text-green-800' :
+                        vehicle.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {vehicle.status}
                       </span>
                     </TableCell>
                     <TableCell>
