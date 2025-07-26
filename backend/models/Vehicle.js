@@ -1,6 +1,22 @@
 const mongoose = require('mongoose');
 
 const vehicleSchema = new mongoose.Schema({
+  make: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  model: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  year: {
+    type: Number,
+    required: true,
+    min: 1900,
+    max: new Date().getFullYear() + 1
+  },
   licensePlate: {
     type: String,
     required: true,
@@ -11,7 +27,7 @@ const vehicleSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['sedan', 'suv', 'van']
+    enum: ['sedan', 'suv', 'van', 'truck', 'bus']
   },
   seatingCapacity: {
     type: Number,
@@ -25,7 +41,13 @@ const vehicleSchema = new mongoose.Schema({
   },
   mileage: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0
+  },
+  fuelType: {
+    type: String,
+    enum: ['gasoline', 'diesel', 'electric', 'hybrid'],
+    default: 'gasoline'
   },
   lastServiceDate: {
     type: Date

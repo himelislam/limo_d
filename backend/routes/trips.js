@@ -7,31 +7,37 @@ const {
   assignTrip,
   addFeedback,
   getPendingTrips,
-  getAvailableResources
+  getAvailableResources,
+  getMyTrips
 } = require('../controllers/tripController');
+
+const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
 
 router.route('/')
   .get(getTrips)
-  .post(createTrip);
+  .post(protect, createTrip);
 
 router.route('/pending')
-  .get(getPendingTrips);
+  .get(protect, authorize('owner', 'admin'), getPendingTrips);
+
+router.route('/my-trips')
+  .get(protect, authorize('driver'), getMyTrips);
 
 router.route('/:id/assign')
-  .put(assignTrip);
+  .put(protect, authorize('owner', 'admin'), assignTrip);
 
 router.route('/:id/available-resources')
-  .get(getAvailableResources);
+  .get(protect, authorize('owner', 'admin'), getAvailableResources);
 
 router.route('/:id/status')
-  .put(updateTripStatus);
+  .put(protect, updateTripStatus);
 
 router.route('/:id/feedback')
-  .put(addFeedback);
+  .put(protect, addFeedback);
 
 router.route('/driver/:driverId')
-  .get(getTripsByDriver);
+  .get(protect, getTripsByDriver);
 
 module.exports = router;

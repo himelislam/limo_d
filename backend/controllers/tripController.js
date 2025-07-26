@@ -3,6 +3,38 @@ const Vehicle = require('../models/Vehicle');
 const Driver = require('../models/Driver');
 const User = require('../models/User');
 
+const checkDriverAvailability = async (driverId, scheduledTime) => {
+  const startTime = new Date(scheduledTime);
+  const endTime = new Date(startTime.getTime() + 4 * 60 * 60 * 1000);
+  
+  const conflictingTrip = await Trip.findOne({
+    driver: driverId,
+    status: { $in: ['scheduled', 'on-the-way', 'started'] },
+    scheduledTime: {
+      $gte: new Date(startTime.getTime() - 4 * 60 * 60 * 1000),
+      $lt: endTime
+    }
+  });
+  
+  return conflictingTrip;
+};
+
+const checkVehicleAvailability = async (vehicleId, scheduledTime) => {
+  const startTime = new Date(scheduledTime);
+  const endTime = new Date(startTime.getTime() + 4 * 60 * 60 * 1000); // 4 hours buffer
+  
+  const conflictingTrip = await Trip.findOne({
+    vehicle: vehicleId,
+    status: { $in: ['scheduled', 'on-the-way', 'started'] },
+    scheduledTime: {
+      $gte: new Date(startTime.getTime() - 4 * 60 * 60 * 1000),
+      $lt: endTime
+    }
+  });
+  
+  return conflictingTrip;
+};
+
 // @desc    Get all trips with filters
 // @route   GET /api/trips
 // @access  Public
@@ -17,7 +49,7 @@ exports.getTrips = async (req, res) => {
 
     const trips = await Trip.find(filter)
       .populate('vehicle')
-      .populate('driver')
+      .populate('driver', 'name email phone licenseNumber experience status')
       .populate('passenger', 'name email phone')
       .sort({ createdAt: -1 });
 
@@ -39,11 +71,11 @@ exports.getTrips = async (req, res) => {
 // @access  Private
 exports.createTrip = async (req, res) => {
   try {
-    const { vehicle, origin, destination, scheduledTime, passengerCount, notes } = req.body;
+    const { vehicle, origin, destination, scheduledTime, passengerCount, notes, passenger } = req.body;
     
     // Validate passenger exists
-    const passenger = await User.findById(req.body.passenger);
-    if (!passenger) {
+    const passengerData = await User.findById(passenger);
+    if (!passengerData) {
       return res.status(404).json({
         success: false,
         error: 'Passenger not found'
@@ -71,7 +103,7 @@ exports.createTrip = async (req, res) => {
     }
 
     const tripData = {
-      passenger: req.body.passenger,
+      passenger: passenger,
       origin,
       destination,
       scheduledTime,
@@ -95,6 +127,7 @@ exports.createTrip = async (req, res) => {
       data: populatedTrip
     });
   } catch (err) {
+    console.error('Error creating trip:', err);
     res.status(500).json({
       success: false,
       error: 'Server Error'
@@ -124,9 +157,13 @@ exports.assignTrip = async (req, res) => {
       });
     }
 
-    // Validate driver
-    const driverDoc = await Driver.findById(driver);
-    if (!driverDoc || driverDoc.status !== 'available') {
+    // Validate driver (User with driver role)
+    const driverDoc = await User.findOne({ 
+      _id: driver, 
+      role: 'driver',
+      status: { $in: ['available', 'active'] }
+    });
+    if (!driverDoc) {
       return res.status(404).json({
         success: false,
         error: 'Driver not available'
@@ -185,11 +222,12 @@ exports.assignTrip = async (req, res) => {
     await trip.save();
 
     // Update driver status
-    await Driver.findByIdAndUpdate(driver, { status: 'on-trip' });
+    await User.findByIdAndUpdate(driver, { status: 'on-trip' });
 
+    // Return fully populated trip
     const updatedTrip = await Trip.findById(trip._id)
       .populate('vehicle')
-      .populate('driver')
+      .populate('driver', 'name email phone licenseNumber experience status')
       .populate('passenger', 'name email phone');
 
     res.status(200).json({
@@ -220,6 +258,14 @@ exports.updateTripStatus = async (req, res) => {
       });
     }
 
+    // Check if user is authorized to update this trip
+    if (req.user.role === 'driver' && trip.driver.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized to update this trip'
+      });
+    }
+
     // Validate status transitions
     const validTransitions = {
       'scheduled': ['on-the-way', 'cancelled'],
@@ -247,12 +293,12 @@ exports.updateTripStatus = async (req, res) => {
 
     // Update driver status
     if (status === 'completed' || status === 'cancelled') {
-      await Driver.findByIdAndUpdate(trip.driver, { status: 'available' });
+      await User.findByIdAndUpdate(trip.driver, { status: 'available' });
     }
 
     const updatedTrip = await Trip.findById(trip._id)
       .populate('vehicle')
-      .populate('driver')
+      .populate('driver', '-password')
       .populate('passenger', 'name email phone');
 
     res.status(200).json({
@@ -348,9 +394,9 @@ exports.getAvailableResources = async (req, res) => {
     }
 
     const scheduledTime = new Date(trip.scheduledTime);
-    const endTime = new Date(scheduledTime.getTime() + 4 * 60 * 60 * 1000); // 4 hours buffer
+    const endTime = new Date(scheduledTime.getTime() + 4 * 60 * 60 * 1000);
 
-    // Get available drivers
+    // Get available drivers (Users with driver role)
     const busyDrivers = await Trip.find({
       status: { $in: ['scheduled', 'on-the-way', 'started'] },
       scheduledTime: {
@@ -359,10 +405,11 @@ exports.getAvailableResources = async (req, res) => {
       }
     }).distinct('driver');
 
-    const availableDrivers = await Driver.find({
+    const availableDrivers = await User.find({
       _id: { $nin: busyDrivers },
-      status: 'available'
-    });
+      role: 'driver',
+      status: { $in: ['available', 'active'] }
+    }).select('-password');
 
     // Get available vehicles
     const busyVehicles = await Trip.find({
@@ -419,54 +466,81 @@ exports.getPendingTrips = async (req, res) => {
   }
 };
 
+// Add new endpoint to get trips for specific driver
+exports.getMyTrips = async (req, res) => {
+  try {
+    const driverId = req.user.id;
+    const { status } = req.query;
+    
+    let filter = { driver: driverId };
+    if (status) filter.status = status;
+
+    const trips = await Trip.find(filter)
+      .populate('vehicle')
+      .populate('passenger', 'name email phone')
+      .sort({ scheduledTime: 1 });
+
+    res.status(200).json({
+      success: true,
+      count: trips.length,
+      data: trips
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+};
+
 // Helper functions
-async function checkDriverAvailability(driverId, scheduledTime) {
-  const startTime = new Date(scheduledTime);
-  const endTime = new Date(startTime.getTime() + 4 * 60 * 60 * 1000); // 4 hours buffer
+// async function checkDriverAvailability(driverId, scheduledTime) {
+//   const startTime = new Date(scheduledTime);
+//   const endTime = new Date(startTime.getTime() + 4 * 60 * 60 * 1000); // 4 hours buffer
 
-  return await Trip.findOne({
-    driver: driverId,
-    status: { $in: ['scheduled', 'on-the-way', 'started'] },
-    $or: [
-      {
-        scheduledTime: {
-          $gte: startTime,
-          $lt: endTime
-        }
-      },
-      {
-        $and: [
-          { scheduledTime: { $lt: startTime } },
-          { endTime: { $exists: false } }
-        ]
-      }
-    ]
-  });
-}
+//   return await Trip.findOne({
+//     driver: driverId,
+//     status: { $in: ['scheduled', 'on-the-way', 'started'] },
+//     $or: [
+//       {
+//         scheduledTime: {
+//           $gte: startTime,
+//           $lt: endTime
+//         }
+//       },
+//       {
+//         $and: [
+//           { scheduledTime: { $lt: startTime } },
+//           { endTime: { $exists: false } }
+//         ]
+//       }
+//     ]
+//   });
+// }
 
-async function checkVehicleAvailability(vehicleId, scheduledTime) {
-  const startTime = new Date(scheduledTime);
-  const endTime = new Date(startTime.getTime() + 4 * 60 * 60 * 1000); // 4 hours buffer
+// async function checkVehicleAvailability(vehicleId, scheduledTime) {
+//   const startTime = new Date(scheduledTime);
+//   const endTime = new Date(startTime.getTime() + 4 * 60 * 60 * 1000); // 4 hours buffer
 
-  return await Trip.findOne({
-    vehicle: vehicleId,
-    status: { $in: ['scheduled', 'on-the-way', 'started'] },
-    $or: [
-      {
-        scheduledTime: {
-          $gte: startTime,
-          $lt: endTime
-        }
-      },
-      {
-        $and: [
-          { scheduledTime: { $lt: startTime } },
-          { endTime: { $exists: false } }
-        ]
-      }
-    ]
-  });
-}
+//   return await Trip.findOne({
+//     vehicle: vehicleId,
+//     status: { $in: ['scheduled', 'on-the-way', 'started'] },
+//     $or: [
+//       {
+//         scheduledTime: {
+//           $gte: startTime,
+//           $lt: endTime
+//         }
+//       },
+//       {
+//         $and: [
+//           { scheduledTime: { $lt: startTime } },
+//           { endTime: { $exists: false } }
+//         ]
+//       }
+//     ]
+//   });
+// }
 
 
 
@@ -478,5 +552,6 @@ module.exports = {
   addFeedback: exports.addFeedback,
   getTripsByDriver: exports.getTripsByDriver,
   getAvailableResources: exports.getAvailableResources,
-  getPendingTrips: exports.getPendingTrips
+  getPendingTrips: exports.getPendingTrips,
+  getMyTrips: exports.getMyTrips
 };

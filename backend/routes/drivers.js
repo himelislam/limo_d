@@ -2,7 +2,7 @@ const express = require('express');
 const {
   getDrivers,
   getDriver,
-  createDriver,
+  registerDriver,
   updateDriver,
   deleteDriver
 } = require('../controllers/driverController');
@@ -13,11 +13,14 @@ const router = express.Router();
 
 router.route('/')
   .get(protect, authorize('admin', 'owner'), getDrivers)
-  .post(createDriver);
+  .post(protect, authorize('admin', 'owner'), registerDriver);
+
+router.route('/register')
+  .post(registerDriver); // Public registration
 
 router.route('/:id')
   .get(getDriver)
-  .put(updateDriver)
-  .delete(deleteDriver);
+  .put(protect, authorize('admin', 'owner'), updateDriver)
+  .delete(protect, authorize('admin', 'owner'), deleteDriver);
 
 module.exports = router;

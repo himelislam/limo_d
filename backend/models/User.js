@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  phone: {
+    type: String,
+    required: function() {
+      return this.role === 'driver' || this.role === 'passenger';
+    }
+  },
   role: {
     type: String,
     enum: ['admin', 'owner', 'driver', 'passenger'],
@@ -25,8 +31,24 @@ const userSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive'],
-    default: 'active'
+    enum: ['active', 'inactive', 'available', 'on-trip', 'on-leave'],
+    default: function() {
+      return this.role === 'driver' ? 'available' : 'active';
+    }
+  },
+  // Driver-specific fields
+  licenseNumber: {
+    type: String,
+    required: function() {
+      return this.role === 'driver';
+    },
+    unique: true,
+    sparse: true
+  },
+  experience: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true
