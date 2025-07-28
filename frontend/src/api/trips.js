@@ -1,5 +1,6 @@
 import api from './index';
 
+// Ensure consistent API_URL usage
 const API_URL = '/trips';
 
 export const getTrips = async (params = {}) => {
@@ -41,3 +42,17 @@ export const getAvailableResources = async (tripId) => {
   const response = await api.get(`${API_URL}/${tripId}/available-resources`);
   return response.data;
 };
+
+export const getTripById = async (tripId) => {
+  const response = await api.get(`${API_URL}/${tripId}`);
+  return response.data;
+};
+
+export const updateTrip = async (tripId, tripData) => {
+  const response = await api.put(`${API_URL}/${tripId}`, tripData);
+  return response.data;
+};
+
+// Add missing export aliases to match frontend usage
+export const addTripFeedback = addFeedback;
+export const assignTripToDriver = assignTrip;

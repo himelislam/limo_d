@@ -23,15 +23,19 @@ api.interceptors.request.use(
   }
 );
 
-// Handle auth errors
+// Handle auth errors consistently
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      localStorage.removeItem('user'); // Also remove user data
       window.location.href = '/login';
     }
-    return Promise.reject(error);
+    
+    // Standardize error response format
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || 'An error occurred';
+    return Promise.reject(new Error(errorMessage));
   }
 );
 
