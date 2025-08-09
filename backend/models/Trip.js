@@ -1,20 +1,23 @@
 const mongoose = require('mongoose');
 
 const tripSchema = new mongoose.Schema({
-  vehicle: {
+  business: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Vehicle',
-    required: false
-  },
-  driver: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Driver',
-    required: false
+    ref: 'Business',
+    required: true
   },
   passenger: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  driver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  vehicle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vehicle'
   },
   origin: {
     type: String,
@@ -24,54 +27,57 @@ const tripSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Support from/to for backward compatibility
+  from: {
+    type: String,
+    get: function() { return this.origin; },
+    set: function(value) { this.origin = value; }
+  },
+  to: {
+    type: String,
+    get: function() { return this.destination; },
+    set: function(value) { this.destination = value; }
+  },
   scheduledTime: {
     type: Date,
     required: true
   },
-  startTime: {
-    type: Date
-  },
-  endTime: {
-    type: Date
-  },
-  distance: {
-    type: Number,
-    min: 0
-  },
-  fare: {
-    type: Number,
-    min: 0
-  },
-  estimatedDuration: {
-    type: Number, // in minutes
-    min: 0
-  },
   passengerCount: {
     type: Number,
-    required: true,
-    min: 1,
     default: 1
   },
   status: {
     type: String,
-    enum: ['pending', 'scheduled', 'on-the-way', 'started', 'completed', 'cancelled'],
+    enum: ['pending', 'scheduled', 'on-the-way', 'started', 'in-progress', 'completed', 'cancelled'],
     default: 'pending'
+  },
+  fare: {
+    type: Number
   },
   notes: {
     type: String
   },
-  assignmentNotes: {
-    type: String
+  bookingSource: {
+    type: String,
+    enum: ['dashboard', 'widget', 'mobile'],
+    default: 'dashboard'
   },
-  rating: {
-    type: Number,
-    min: 1,
-    max: 5
-  },
-  feedback: {
-    type: String
+  customerInfo: {
+    name: String,
+    email: String,
+    phone: String,
+    vehicleType: String
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Add virtual field for frontend compatibility
+tripSchema.virtual('passengers').get(function() {
+  return this.passengerCount;
+});
 
 // Index for efficient queries
 tripSchema.index({ passenger: 1, status: 1 });

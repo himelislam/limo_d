@@ -1,4 +1,5 @@
 const express = require('express');
+const router = express.Router();
 const {
   getVehicles,
   getVehicle,
@@ -6,16 +7,39 @@ const {
   updateVehicle,
   deleteVehicle
 } = require('../controllers/vehicleController');
+const { protect, authorize } = require('../middlewares/auth');
 
-const router = express.Router();
+// All routes require authentication
+router.use(protect);
 
-router.route('/')
-  .get(getVehicles)
-  .post(createVehicle);
+// @route   GET /api/vehicles
+// @desc    Get all vehicles for business
+// @access  Private (Business Owner, Admin, Driver)
+router.get('/', getVehicles);
 
-router.route('/:id')
-  .get(getVehicle)
-  .put(updateVehicle)
-  .delete(deleteVehicle);
+// @route   POST /api/vehicles
+// @desc    Create new vehicle
+// @access  Private (Business Owner, Admin)
+router.post('/', authorize('business_owner', 'admin'), createVehicle);
+
+// @route   GET /api/vehicles/:id
+// @desc    Get single vehicle
+// @access  Private (Business Owner, Admin, Driver)
+router.get('/:id', getVehicle);
+
+// @route   PUT /api/vehicles/:id
+// @desc    Update vehicle
+// @access  Private (Business Owner, Admin)
+router.put('/:id', authorize('business_owner', 'admin'), updateVehicle);
+
+// @route   PATCH /api/vehicles/:id/status
+// @desc    Update vehicle status
+// @access  Private (Business Owner, Admin)
+// router.patch('/:id/status', authorize('business_owner', 'admin'), updateVehicleStatus);
+
+// @route   DELETE /api/vehicles/:id
+// @desc    Delete vehicle
+// @access  Private (Business Owner, Admin)
+router.delete('/:id', authorize('business_owner', 'admin'), deleteVehicle);
 
 module.exports = router;

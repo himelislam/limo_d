@@ -1,43 +1,70 @@
 const express = require('express');
+const router = express.Router();
 const {
   getTrips,
+  getTripById,
   createTrip,
+  updateTrip,
   updateTripStatus,
-  getTripsByDriver,
+  deleteTrip,
   assignTrip,
-  addFeedback,
-  getPendingTrips,
-  getAvailableResources,
-  getMyTrips
+  getMyTrips,
+  getDriverTrips,
+  getPendingTrips
 } = require('../controllers/tripController');
-
 const { protect, authorize } = require('../middlewares/auth');
 
-const router = express.Router();
+// All routes require authentication
+router.use(protect);
 
-router.route('/')
-  .get(getTrips)
-  .post(protect, createTrip);
+// @route   GET /api/trips
+// @desc    Get all trips
+// @access  Private
+router.get('/', getTrips);
 
-router.route('/pending')
-  .get(protect, authorize('owner', 'admin'), getPendingTrips);
+// @route   GET /api/trips/my
+// @desc    Get my trips (passenger)
+// @access  Private (Passenger)
+router.get('/my', authorize('passenger'), getMyTrips);
 
-router.route('/my-trips')
-  .get(protect, authorize('driver'), getMyTrips);
+// @route   GET /api/trips/driver
+// @desc    Get driver trips
+// @access  Private (Driver)
+router.get('/driver', authorize('driver'), getDriverTrips);
 
-router.route('/:id/assign')
-  .put(protect, authorize('owner', 'admin'), assignTrip);
+// @route   GET /api/trips/pending
+// @desc    Get pending trips
+// @access  Private (Business Owner, Admin)
+router.get('/pending', authorize('business_owner', 'admin'), getPendingTrips);
 
-router.route('/:id/available-resources')
-  .get(protect, authorize('owner', 'admin'), getAvailableResources);
+// @route   POST /api/trips
+// @desc    Create new trip
+// @access  Private
+router.post('/', createTrip);
 
-router.route('/:id/status')
-  .put(protect, updateTripStatus);
+// @route   GET /api/trips/:id
+// @desc    Get single trip
+// @access  Private
+router.get('/:id', getTripById);
 
-router.route('/:id/feedback')
-  .put(protect, addFeedback);
+// @route   PUT /api/trips/:id
+// @desc    Update trip
+// @access  Private (Business Owner, Admin)
+router.put('/:id', authorize('business_owner', 'admin'), updateTrip);
 
-router.route('/driver/:driverId')
-  .get(protect, getTripsByDriver);
+// @route   PATCH /api/trips/:id/status
+// @desc    Update trip status
+// @access  Private
+router.patch('/:id/status', updateTripStatus);
+
+// @route   PATCH /api/trips/:id/assign
+// @desc    Assign driver and vehicle to trip
+// @access  Private (Business Owner, Admin)
+router.patch('/:id/assign', authorize('business_owner', 'admin'), assignTrip);
+
+// @route   DELETE /api/trips/:id
+// @desc    Delete trip
+// @access  Private (Business Owner, Admin)
+router.delete('/:id', authorize('business_owner', 'admin'), deleteTrip);
 
 module.exports = router;
