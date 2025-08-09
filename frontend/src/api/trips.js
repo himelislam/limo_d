@@ -1,58 +1,64 @@
-import api from './index';
 
-// Ensure consistent API_URL usage
-const API_URL = '/trips';
+import api from './config';
 
-export const getTrips = async (params = {}) => {
-  const response = await api.get(API_URL, { params });
-  return response.data;
-};
-
-export const getMyTrips = async (params = {}) => {
-  const response = await api.get(`${API_URL}/my-trips`, { params });
+export const getTrips = async () => {
+  const response = await api.get('/trips');
   return response.data;
 };
 
 export const createTrip = async (tripData) => {
-  const response = await api.post(API_URL, tripData);
+  const response = await api.post('/trips', tripData);
   return response.data;
 };
 
-export const assignTrip = async (tripId, assignmentData) => {
-  const response = await api.put(`${API_URL}/${tripId}/assign`, assignmentData);
+export const updateTrip = async (id, tripData) => {
+  const response = await api.put(`/trips/${id}`, tripData);
   return response.data;
 };
 
-export const updateTripStatus = async (tripId, statusData) => {
-  const response = await api.put(`${API_URL}/${tripId}/status`, statusData);
+export const deleteTrip = async (id) => {
+  const response = await api.delete(`/trips/${id}`);
   return response.data;
 };
 
-export const addFeedback = async (tripId, feedbackData) => {
-  const response = await api.put(`${API_URL}/${tripId}/feedback`, feedbackData);
+export const updateTripStatus = async (id, status) => {
+  const response = await api.patch(`/trips/${id}/status`, { status });
+  return response.data;
+};
+
+export const assignTripDriver = async (tripId, driverId, vehicleId) => {
+  const response = await api.patch(`/trips/${tripId}/assign`, {
+    driver: driverId,
+    vehicle: vehicleId
+  });
   return response.data;
 };
 
 export const getPendingTrips = async () => {
-  const response = await api.get(`${API_URL}/pending`);
+  const response = await api.get('/trips/pending');
   return response.data;
 };
 
-export const getAvailableResources = async (tripId) => {
-  const response = await api.get(`${API_URL}/${tripId}/available-resources`);
+export const getMyTrips = async () => {
+  const response = await api.get('/trips/my');
   return response.data;
 };
 
-export const getTripById = async (tripId) => {
-  const response = await api.get(`${API_URL}/${tripId}`);
+export const getDriverTrips = async () => {
+  const response = await api.get('/trips/driver');
   return response.data;
 };
 
-export const updateTrip = async (tripId, tripData) => {
-  const response = await api.put(`${API_URL}/${tripId}`, tripData);
+export const calculateFare = async (from, to, distance) => {
+  const response = await api.post('/trips/calculate-fare', {
+    from,
+    to,
+    distance
+  });
   return response.data;
 };
 
-// Add missing export aliases to match frontend usage
-export const addTripFeedback = addFeedback;
-export const assignTripToDriver = assignTrip;
+export const addTripFeedback = async (tripId, feedback) => {
+  const response = await api.post(`/trips/${tripId}/feedback`, feedback);
+  return response.data;
+};

@@ -9,11 +9,12 @@ const sidebarItems = {
     { name: 'Trips', icon: ClipboardList, path: '/admin/trips' },
     { name: 'Settings', icon: Settings, path: '/admin/settings' },
   ],
-  owner: [
-    { name: 'Dashboard', icon: Home, path: '/owner/dashboard' },
-    { name: 'Drivers', icon: Users, path: '/owner/drivers' },
-    { name: 'Vehicles', icon: Car, path: '/owner/vehicles' },
-    { name: 'Trips', icon: ClipboardList, path: '/owner/trips' },
+  business_owner: [
+    { name: 'Dashboard', icon: Home, path: '/business/dashboard' },
+    { name: 'Drivers', icon: Users, path: '/business/drivers' },
+    { name: 'Vehicles', icon: Car, path: '/business/vehicles' },
+    { name: 'Trips', icon: ClipboardList, path: '/business/trips' },
+    { name: 'Settings', icon: Settings, path: '/business/settings' },
   ],
   driver: [
     { name: 'Dashboard', icon: Home, path: '/driver/dashboard' },

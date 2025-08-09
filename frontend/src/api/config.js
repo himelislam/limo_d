@@ -36,13 +36,4 @@ api.interceptors.response.use(
   }
 );
 
-export const handleApiResponse = (response) => {
-  return response.data;
-};
-
-export const handleApiError = (error) => {
-  const message = error.response?.data?.error || error.message || 'An error occurred';
-  throw new Error(message);
-};
-
 export default api;

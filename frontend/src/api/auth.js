@@ -1,26 +1,48 @@
-import axios from 'axios';
+import api, { handleApiResponse, handleApiError } from './index';
 
-const API_URL = 'http://localhost:4000/api/auth';
+const AUTH_ENDPOINTS = {
+  LOGIN: '/auth/login',
+  REGISTER: '/auth/register',
+  LOGOUT: '/auth/logout',
+  ME: '/auth/me'
+};
 
 export const loginUser = async (email, password) => {
-  const response = await axios.post(`${API_URL}/login`, { email, password });
-  return response.data;
+  try {
+    const response = await api.post(AUTH_ENDPOINTS.LOGIN, { email, password });
+    return handleApiResponse(response);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const registerUser = async (userData) => {
-  const response = await axios.post(`${API_URL}/register`, userData);
-  return response.data;
+  try {
+    const response = await api.post(AUTH_ENDPOINTS.REGISTER, userData);
+    return handleApiResponse(response);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const logoutUser = async () => {
-  await axios.get(`${API_URL}/logout`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-  });
+  try {
+    const response = await api.post(AUTH_ENDPOINTS.LOGOUT);
+    return handleApiResponse(response);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const getCurrentUser = async (token) => {
-  const response = await axios.get(`${API_URL}/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+  try {
+    const response = await api.get(AUTH_ENDPOINTS.ME, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return handleApiResponse(response);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
