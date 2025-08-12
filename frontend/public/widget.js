@@ -160,13 +160,15 @@
     if (autoInit) {
       const widgetId = autoInit.getAttribute('data-widget-id');
       const buttonText = autoInit.getAttribute('data-button-text') || 'Book a Ride';
+      const baseUrl = autoInit.getAttribute('data-base-url') || window.location.origin;
       const containerId = autoInit.id || 'transport-booking-widget';
 
       if (widgetId) {
         window.TransportBookingWidget.init({
           widgetId,
           containerId,
-          buttonText
+          buttonText,
+          baseUrl
         });
       }
     }

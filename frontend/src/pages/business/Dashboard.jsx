@@ -63,12 +63,16 @@ export default function BusinessDashboard() {
   const totalRevenue = completedTrips.reduce((sum, trip) => sum + (trip.fare || 0), 0);
 
   const copyWidgetCode = () => {
+    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+    
     const widgetCode = `<div id="transport-booking-widget" 
-     data-transport-widget 
-     data-widget-id="${business?.widgetId}"
-     data-button-text="Book a Ride">
-</div>
-<script src="${window.location.origin}/widget.js"></script>`;
+       data-transport-widget 
+       data-widget-id="${business?.widgetId}"
+       data-button-text="Book a Ride"
+       data-base-url="${frontendUrl}">
+    </div>
+    <script src="${frontendUrl}/widget.js"></script>`;
     
     navigator.clipboard.writeText(widgetCode);
     setCopied(true);
@@ -113,9 +117,10 @@ export default function BusinessDashboard() {
 <div id="transport-booking-widget" 
      data-transport-widget 
      data-widget-id="${business?.widgetId}"
-     data-button-text="Book a Ride">
+     data-button-text="Book a Ride"
+     data-base-url="${import.meta.env.VITE_FRONTEND_URL || window.location.origin}">
 </div>
-<script src="${window.location.origin}/widget.js"></script>`}
+<script src="${import.meta.env.VITE_FRONTEND_URL || window.location.origin}/widget.js"></script>`}
                   </code>
                 </div>
                 <div className="flex space-x-2">
