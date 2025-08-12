@@ -139,16 +139,6 @@ export default function BusinessVehicles() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="capacity">Capacity</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      value={newVehicle.capacity}
-                      onChange={(e) => setNewVehicle({ ...newVehicle, capacity: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
                     <Label htmlFor="type">Vehicle Type</Label>
                     <Select value={newVehicle.type} onValueChange={(value) => setNewVehicle({ ...newVehicle, type: value })}>
                       <SelectTrigger>
