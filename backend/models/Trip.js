@@ -48,7 +48,7 @@ const tripSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'scheduled', 'on-the-way', 'started', 'in-progress', 'completed', 'cancelled'],
+    enum: ['pending', 'quoted', 'confirmed', 'scheduled', 'driver-assigned', 'on-the-way', 'started', 'in-progress', 'completed', 'cancelled', 'declined'],
     default: 'pending'
   },
   fare: {
@@ -67,7 +67,16 @@ const tripSchema = new mongoose.Schema({
     email: String,
     phone: String,
     vehicleType: String
-  }
+  },
+  confirmationToken: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  quotedAt: Date,
+  confirmedAt: Date,
+  declinedAt: Date,
+  proposedFare: Number
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

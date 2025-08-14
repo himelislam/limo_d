@@ -67,4 +67,14 @@ router.patch('/:id/assign', authorize('business_owner', 'admin'), assignTrip);
 // @access  Private (Business Owner, Admin)
 router.delete('/:id', authorize('business_owner', 'admin'), deleteTrip);
 
+// @route   GET /api/trips/my-trips
+// @desc    Get trips for current driver
+// @access  Private (Driver)
+router.get('/my-trips', authorize('driver'), getMyTrips);
+
+// @route   PUT /api/trips/:id/status
+// @desc    Update trip status
+// @access  Private (Driver)
+router.put('/:id/status', authorize('driver'), updateTripStatus);
+
 module.exports = router;

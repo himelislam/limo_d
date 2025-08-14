@@ -1,6 +1,7 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
 const Vehicle = require('../models/Vehicle');
+const emailService = require('../services/emailService');
 
 // Helper functions for availability checks
 const checkDriverAvailability = async (driverId, scheduledTime) => {
@@ -271,7 +272,7 @@ exports.getDriverTrips = async (req, res) => {
 // @access  Private (Business Owner, Admin)
 exports.getPendingTrips = async (req, res) => {
   try {
-    let filter = { status: 'pending' };
+    let filter = { status: { $in: ['pending', 'confirmed'] } };
     
     // Business owners only see their pending trips
     if (req.user.role === 'business_owner') {
@@ -282,6 +283,7 @@ exports.getPendingTrips = async (req, res) => {
     const trips = await Trip.find(filter)
       .populate('business', 'name')
       .populate('passenger', 'name email phone')
+      .populate('vehicle')
       .sort({ scheduledTime: 1 });
 
     res.status(200).json({
@@ -313,6 +315,14 @@ exports.assignTrip = async (req, res) => {
       });
     }
 
+    // Check if trip is in confirmed status (for widget bookings) or pending (for regular bookings)
+    if (!['pending', 'confirmed'].includes(trip.status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Trip is not available for assignment'
+      });
+    }
+
     // Check business ownership
     if (req.user.role === 'business_owner') {
       const user = await User.findById(req.user.id);
@@ -322,13 +332,6 @@ exports.assignTrip = async (req, res) => {
           error: 'Not authorized to assign this trip'
         });
       }
-    }
-
-    if (trip.status !== 'pending') {
-      return res.status(400).json({
-        success: false,
-        error: 'Trip is not in pending status'
-      });
     }
 
     // Validate driver belongs to same business
@@ -384,11 +387,11 @@ exports.assignTrip = async (req, res) => {
       });
     }
 
-    // Update trip - THIS IS THE KEY CHANGE
+    // Update trip
     trip.driver = driver;
     trip.vehicle = vehicle;
-    trip.fare = fare;
-    trip.status = 'scheduled'; // Change status from pending to scheduled
+    trip.fare = fare || trip.fare;
+    trip.status = 'driver-assigned'; // New status
     
     if (estimatedDuration) {
       trip.estimatedDuration = estimatedDuration;
@@ -409,6 +412,13 @@ exports.assignTrip = async (req, res) => {
       .populate('vehicle')
       .populate('driver', 'name email phone licenseNumber experience status')
       .populate('passenger', 'name email phone');
+
+    // Send email notification to driver
+    try {
+      await emailService.sendDriverAssignmentNotification(updatedTrip.driver, updatedTrip);
+    } catch (emailError) {
+      console.error('Failed to send driver notification:', emailError);
+    }
 
     res.status(200).json({
       success: true,
@@ -517,6 +527,7 @@ exports.getMyTrips = async (req, res) => {
       data: trips
     });
   } catch (err) {
+    console.error('Error getting driver trips:', err);
     res.status(500).json({
       success: false,
       error: 'Server Error'
@@ -526,12 +537,18 @@ exports.getMyTrips = async (req, res) => {
 
 // @desc    Update trip status
 // @route   PUT /api/trips/:id/status
-// @access  Private
+// @access  Private (Driver)
 exports.updateTripStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const trip = await Trip.findById(req.params.id);
-    
+    const tripId = req.params.id;
+
+    const trip = await Trip.findById(tripId)
+      .populate('driver', 'name email phone')
+      .populate('passenger', 'name email phone')
+      .populate('vehicle', 'make model licensePlate')
+      .populate('business', 'name');
+
     if (!trip) {
       return res.status(404).json({
         success: false,
@@ -539,8 +556,8 @@ exports.updateTripStatus = async (req, res) => {
       });
     }
 
-    // Check if user is authorized to update this trip
-    if (req.user.role === 'driver' && trip.driver.toString() !== req.user.id) {
+    // Verify driver owns this trip
+    if (trip.driver._id.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to update this trip'
@@ -549,45 +566,49 @@ exports.updateTripStatus = async (req, res) => {
 
     // Validate status transitions
     const validTransitions = {
-      'scheduled': ['on-the-way', 'cancelled'],
-      'on-the-way': ['started', 'cancelled'],
-      'started': ['completed', 'cancelled']
+      'driver-assigned': ['on-the-way'],
+      'scheduled': ['on-the-way'],
+      'on-the-way': ['started'],
+      'started': ['completed'],
+      'in-progress': ['completed']
     };
 
-    if (!validTransitions[trip.status]?.includes(status)) {
+    if (validTransitions[trip.status] && !validTransitions[trip.status].includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid status transition'
+        error: `Cannot change status from ${trip.status} to ${status}`
       });
     }
 
-    // Update trip
+    // Update trip status
     trip.status = status;
     
+    // Set timestamps based on status
     if (status === 'started') {
       trip.startTime = new Date();
     } else if (status === 'completed') {
       trip.endTime = new Date();
+      // Update driver status back to available
+      await User.findByIdAndUpdate(req.user.id, { status: 'active' });
     }
 
     await trip.save();
 
-    // Update driver status
-    if (status === 'completed' || status === 'cancelled') {
-      await User.findByIdAndUpdate(trip.driver, { status: 'available' });
+    // Send email notification to passenger for important status updates
+    if (['on-the-way', 'started', 'completed'].includes(status)) {
+      try {
+        await emailService.sendTripStatusUpdateToPassenger(trip, status);
+      } catch (emailError) {
+        console.error('Failed to send passenger notification:', emailError);
+      }
     }
-
-    const updatedTrip = await Trip.findById(trip._id)
-      .populate('business', 'name')
-      .populate('vehicle')
-      .populate('driver', '-password')
-      .populate('passenger', 'name email phone');
 
     res.status(200).json({
       success: true,
-      data: updatedTrip
+      data: trip
     });
   } catch (err) {
+    console.error('Error updating trip status:', err);
     res.status(500).json({
       success: false,
       error: 'Server Error'
@@ -843,28 +864,6 @@ exports.getTripsByDriver = async (req, res) => {
   }
 };
 
-// @desc    Get pending trips for owner
-// @route   GET /api/trips/pending
-// @access  Private (Owner/Admin)
-exports.getPendingTrips = async (req, res) => {
-  try {
-    const pendingTrips = await Trip.find({ status: 'pending' })
-      .populate('passenger', 'name email phone')
-      .populate('vehicle')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: pendingTrips.length,
-      data: pendingTrips
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: 'Server Error'
-    });
-  }
-};
 
 // Add new endpoint to get trips for specific driver
 exports.getMyTrips = async (req, res) => {
