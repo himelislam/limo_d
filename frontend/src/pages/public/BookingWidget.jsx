@@ -146,13 +146,24 @@ export default function BookingWidget() {
               {submissionStatus === 'success' ? (
                 <>
                   <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Submitted!</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Submitted!</h2>
                   <p className="text-gray-600 mb-4">
-                    Thank you for your booking request. We'll contact you shortly to confirm the details and pricing.
+                    Thank you for your booking request. We'll review your trip details and send you a quote via email within 24 hours.
                   </p>
+                  <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>What happens next?</strong>
+                    </p>
+                    <ol className="text-sm text-blue-700 mt-2 space-y-1">
+                      <li>1. We'll review your trip and prepare a quote</li>
+                      <li>2. You'll receive an email with pricing and vehicle details</li>
+                      <li>3. Confirm your booking via the email link</li>
+                      <li>4. We'll assign a driver and send you their details</li>
+                    </ol>
+                  </div>
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
                     <p className="text-sm text-gray-600">
-                      <strong>Booking ID:</strong> BK{Date.now()}
+                      <strong>Booking ID:</strong> {submitBookingMutation.data?.bookingId}
                     </p>
                     <p className="text-sm text-gray-600">
                       <strong>Customer:</strong> {bookingData.customerName}

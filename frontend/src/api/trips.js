@@ -22,7 +22,7 @@ export const deleteTrip = async (id) => {
 };
 
 export const updateTripStatus = async (id, status) => {
-  const response = await api.patch(`/trips/${id}/status`, { status });
+  const response = await api.put(`/trips/${id}/status`, { status });
   return response.data;
 };
 

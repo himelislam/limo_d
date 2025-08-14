@@ -11,9 +11,11 @@ import { getDrivers } from '@/api/drivers';
 import { getMyBusiness } from '@/api/business';
 import { getBookings } from '@/api/bookings';
 import TripAssignmentDialog from '@/components/TripAssignmentDialog';
+import QuoteDialog from '@/components/QuoteDialog';
 
 export default function BusinessDashboard() {
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [selectedBookingForQuote, setSelectedBookingForQuote] = useState(null);
   const [copied, setCopied] = useState(false);
 
   const { data: businessRes } = useQuery({
@@ -53,6 +55,9 @@ export default function BusinessDashboard() {
   });
   const bookings = bookingsRes?.data || [];
   const pendingBookings = bookings.filter(booking => booking.status === 'pending');
+  const pendingQuoteBookings = bookings.filter(booking => booking.status === 'pending');
+  const quotedBookings = bookings.filter(booking => booking.status === 'quoted');
+  const confirmedBookings = bookings.filter(booking => booking.status === 'confirmed');
 
   const activeVehicles = vehicles.filter(v => v.status === 'active');
   const availableDrivers = drivers.filter(d => d.status === 'available');
@@ -244,6 +249,124 @@ export default function BusinessDashboard() {
         </CardContent>
       </Card>
 
+      {/* Pending Quote Requests */}
+      {pendingQuoteBookings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Pending Quote Requests
+            </CardTitle>
+            <CardDescription>
+              New bookings waiting for your quote
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingQuoteBookings.map((booking) => (
+                <div key={booking._id} className="flex items-center justify-between p-3 border rounded bg-orange-50">
+                  <div>
+                    <div className="font-medium">
+                      {booking.customerInfo?.name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {booking.origin} → {booking.destination}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(booking.scheduledTime).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {booking.passengerCount} passenger(s) • {booking.customerInfo?.vehicleType}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setSelectedBookingForQuote(booking)}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    Send Quote
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quoted Bookings Awaiting Confirmation */}
+      {quotedBookings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-500" />
+              Awaiting Customer Confirmation
+            </CardTitle>
+            <CardDescription>
+              Quotes sent, waiting for customer response
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {quotedBookings.map((booking) => (
+                <div key={booking._id} className="flex items-center justify-between p-3 border rounded bg-blue-50">
+                  <div>
+                    <div className="font-medium">
+                      {booking.customerInfo?.name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {booking.origin} → {booking.destination}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Quoted: ${booking.proposedFare} • {new Date(booking.quotedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <Badge variant="secondary">Quote Sent</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Confirmed Bookings Ready for Driver Assignment */}
+      {confirmedBookings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              Ready for Driver Assignment
+            </CardTitle>
+            <CardDescription>
+              Confirmed bookings waiting for driver assignment
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {confirmedBookings.map((booking) => (
+                <div key={booking._id} className="flex items-center justify-between p-3 border rounded bg-green-50">
+                  <div>
+                    <div className="font-medium">
+                      {booking.customerInfo?.name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {booking.origin} → {booking.destination}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Confirmed: ${booking.fare} • {new Date(booking.confirmedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setSelectedTrip(booking)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Assign Driver
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Trip Assignments */}
       {pendingTrips.length > 0 && (
         <Card>
@@ -345,6 +468,12 @@ export default function BusinessDashboard() {
           onClose={() => setSelectedTrip(null)}
         />
       )}
+
+      <QuoteDialog
+        booking={selectedBookingForQuote}
+        isOpen={!!selectedBookingForQuote}
+        onClose={() => setSelectedBookingForQuote(null)}
+      />
     </div>
   );
 }

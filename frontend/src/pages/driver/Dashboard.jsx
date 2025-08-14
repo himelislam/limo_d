@@ -24,8 +24,8 @@ export default function DriverDashboard() {
     },
   });
 
-  const scheduledTrips = trips.filter(trip => trip.status === 'scheduled');
-  const activeTrips = trips.filter(trip => ['on-the-way', 'started'].includes(trip.status));
+  const scheduledTrips = trips.filter(trip => ['scheduled', 'driver-assigned'].includes(trip.status));
+  const activeTrips = trips.filter(trip => ['on-the-way', 'started', 'in-progress'].includes(trip.status));
   const todayTrips = trips.filter(trip => 
     new Date(trip.scheduledTime).toDateString() === new Date().toDateString()
   );
@@ -37,6 +37,7 @@ export default function DriverDashboard() {
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case 'scheduled': return 'default';
+      case 'driver-assigned': return 'default';
       case 'on-the-way': return 'secondary';
       case 'started': return 'destructive';
       case 'completed': return 'outline';
@@ -46,6 +47,8 @@ export default function DriverDashboard() {
 
   const getNextAction = (trip) => {
     switch (trip.status) {
+      case 'driver-assigned':
+        return { label: 'Start Trip', action: 'on-the-way', icon: Play };
       case 'scheduled':
         return { label: 'Start Trip', action: 'on-the-way', icon: Play };
       case 'on-the-way':
@@ -131,9 +134,9 @@ export default function DriverDashboard() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span className="font-medium">{trip.from} → {trip.to}</span>
+                        <span className="font-medium">{trip.origin} → {trip.destination}</span>
                         <Badge variant={getStatusBadgeVariant(trip.status)}>
-                          {trip.status.replace('-', ' ')}
+                          {trip.status === 'driver-assigned' ? 'assigned' : trip.status}
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -179,7 +182,7 @@ export default function DriverDashboard() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span className="font-medium">{trip.from} → {trip.to}</span>
+                        <span className="font-medium">{trip.origin} → {trip.destination}</span>
                         <Badge variant={getStatusBadgeVariant(trip.status)}>
                           {trip.status}
                         </Badge>

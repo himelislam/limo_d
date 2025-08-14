@@ -25,6 +25,7 @@ import BookingWidget from './pages/public/BookingWidget';
 import CustomerPortal from './pages/public/CustomerPortal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
+import BookingConfirmation from './pages/public/BookingConfirmation';
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,10 @@ function App() {
             {/* Public Booking Widget */}
             <Route path="/widget/:widgetId" element={<BookingWidget />} />
             <Route path="/portal/:businessId" element={<CustomerPortal />} />
+            
+            {/* Public booking confirmation routes */}
+            <Route path="/booking/confirm/:token" element={<BookingConfirmation />} />
+            <Route path="/booking/decline/:token" element={<BookingConfirmation />} />
             
             {/* Super Admin Routes */}
             <Route path="/admin" element={
