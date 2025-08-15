@@ -3,34 +3,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, DollarSign, CheckCircle, Play, Square } from 'lucide-react';
-import { getTrips, updateTrip } from '@/api/trips';
+import { MapPin, Clock, DollarSign, CheckCircle, Play, Square, User } from 'lucide-react';
+import { getDriverTrips, updateTripStatus } from '@/api/trips';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function DriverTrips() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: tripsRes = [], isLoading } = useQuery({
+  const { data: tripsRes, isLoading } = useQuery({
     queryKey: ['driver-trips'],
-    queryFn: getTrips,
+    queryFn: getDriverTrips,
   });
 
-  const trips = tripsRes?.data ?? [];
+  // Handle the API response structure properly
+  const trips = tripsRes?.data || tripsRes || [];
 
-  const updateTripMutation = useMutation({
-    mutationFn: ({ id, data }) => updateTrip(id, data),
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ tripId, status }) => updateTripStatus(tripId, status),
     onSuccess: () => {
       queryClient.invalidateQueries(['driver-trips']);
     },
   });
 
-  const myTrips = trips.filter(trip => trip.driver === user?.id);
-  const scheduledTrips = myTrips.filter(trip => trip.status === 'scheduled');
-  const activeTrips = myTrips.filter(trip => trip.status === 'in_progress');
-  const completedTrips = myTrips.filter(trip => trip.status === 'completed');
-  const todayTrips = myTrips.filter(trip => 
-    new Date(trip.createdAt).toDateString() === new Date().toDateString()
+  const scheduledTrips = trips.filter(trip => ['scheduled', 'driver-assigned', 'confirmed'].includes(trip.status));
+  const activeTrips = trips.filter(trip => ['on-the-way', 'started', 'in-progress'].includes(trip.status));
+  const completedTrips = trips.filter(trip => trip.status === 'completed');
+  const todayTrips = trips.filter(trip => 
+    new Date(trip.scheduledTime).toDateString() === new Date().toDateString()
   );
 
   const totalEarnings = completedTrips.reduce((sum, trip) => sum + (trip.fare || 0), 0);
@@ -67,26 +67,46 @@ export default function DriverTrips() {
   ];
 
   const handleStartTrip = (tripId) => {
-    updateTripMutation.mutate({
-      id: tripId,
-      data: { status: 'in_progress', startTime: new Date() }
+    updateStatusMutation.mutate({
+      tripId,
+      status: 'on-the-way'
     });
   };
 
   const handleCompleteTrip = (tripId) => {
-    updateTripMutation.mutate({
-      id: tripId,
-      data: { status: 'completed', endTime: new Date() }
+    updateStatusMutation.mutate({
+      tripId,
+      status: 'completed'
     });
   };
 
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case 'scheduled': return 'secondary';
-      case 'in_progress': return 'default';
+      case 'driver-assigned': return 'secondary';
+      case 'confirmed': return 'secondary';
+      case 'on-the-way': return 'default';
+      case 'started': return 'default';
+      case 'in-progress': return 'default';
       case 'completed': return 'outline';
       case 'cancelled': return 'destructive';
       default: return 'outline';
+    }
+  };
+
+  const getNextAction = (trip) => {
+    switch (trip.status) {
+      case 'driver-assigned':
+      case 'scheduled':
+      case 'confirmed':
+        return { label: 'Start Trip', action: 'on-the-way', icon: Play };
+      case 'on-the-way':
+        return { label: 'Pick Up Passenger', action: 'started', icon: User };
+      case 'started':
+      case 'in-progress':
+        return { label: 'Complete Trip', action: 'completed', icon: CheckCircle };
+      default:
+        return null;
     }
   };
 
@@ -127,35 +147,50 @@ export default function DriverTrips() {
               {scheduledTrips.length === 0 ? (
                 <p className="text-muted-foreground">No scheduled trips</p>
               ) : (
-                scheduledTrips.map((trip) => (
-                  <div key={trip._id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{trip.from} → {trip.to}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Passenger: {trip.passenger?.name || 'Unknown'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Fare: ${trip.fare || 'N/A'}
-                      </p>
-                      {trip.scheduledTime && (
-                        <p className="text-sm text-muted-foreground">
-                          Time: {new Date(trip.scheduledTime).toLocaleString()}
+                scheduledTrips.map((trip) => {
+                  const nextAction = getNextAction(trip);
+                  return (
+                    <div key={trip._id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1">
+                        <p className="font-medium">
+                          {trip.origin || trip.from} → {trip.destination || trip.to}
                         </p>
-                      )}
+                        <p className="text-sm text-muted-foreground">
+                          Passenger: {trip.passenger?.name || 'Unknown'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Fare: ${trip.fare || 'N/A'}
+                        </p>
+                        {trip.scheduledTime && (
+                          <p className="text-sm text-muted-foreground">
+                            Time: {new Date(trip.scheduledTime).toLocaleString()}
+                          </p>
+                        )}
+                        {trip.notes && (
+                          <p className="text-sm text-muted-foreground">
+                            Notes: {trip.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <Badge variant="secondary">{trip.status}</Badge>
+                        {nextAction && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateStatusMutation.mutate({
+                              tripId: trip._id,
+                              status: nextAction.action
+                            })}
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            <nextAction.icon className="mr-1 h-3 w-3" />
+                            {nextAction.label}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col space-y-2">
-                      <Badge variant="secondary">Scheduled</Badge>
-                      <Button
-                        size="sm"
-                        onClick={() => handleStartTrip(trip._id)}
-                        disabled={updateTripMutation.isLoading}
-                      >
-                        <Play className="mr-1 h-3 w-3" />
-                        Start
-                      </Button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </CardContent>
@@ -171,35 +206,50 @@ export default function DriverTrips() {
               {activeTrips.length === 0 ? (
                 <p className="text-muted-foreground">No active trips</p>
               ) : (
-                activeTrips.map((trip) => (
-                  <div key={trip._id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{trip.from} → {trip.to}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Passenger: {trip.passenger?.name || 'Unknown'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Fare: ${trip.fare || 'N/A'}
-                      </p>
-                      {trip.startTime && (
-                        <p className="text-sm text-muted-foreground">
-                          Started: {new Date(trip.startTime).toLocaleTimeString()}
+                activeTrips.map((trip) => {
+                  const nextAction = getNextAction(trip);
+                  return (
+                    <div key={trip._id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1">
+                        <p className="font-medium">
+                          {trip.origin || trip.from} → {trip.destination || trip.to}
                         </p>
-                      )}
+                        <p className="text-sm text-muted-foreground">
+                          Passenger: {trip.passenger?.name || 'Unknown'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Fare: ${trip.fare || 'N/A'}
+                        </p>
+                        {trip.scheduledTime && (
+                          <p className="text-sm text-muted-foreground">
+                            Scheduled: {new Date(trip.scheduledTime).toLocaleString()}
+                          </p>
+                        )}
+                        {trip.notes && (
+                          <p className="text-sm text-muted-foreground">
+                            Notes: {trip.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <Badge variant="default">In Progress</Badge>
+                        {nextAction && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateStatusMutation.mutate({
+                              tripId: trip._id,
+                              status: nextAction.action
+                            })}
+                            disabled={updateStatusMutation.isPending}
+                          >
+                            <nextAction.icon className="mr-1 h-3 w-3" />
+                            {nextAction.label}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col space-y-2">
-                      <Badge variant="default">In Progress</Badge>
-                      <Button
-                        size="sm"
-                        onClick={() => handleCompleteTrip(trip._id)}
-                        disabled={updateTripMutation.isLoading}
-                      >
-                        <Square className="mr-1 h-3 w-3" />
-                        Complete
-                      </Button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </CardContent>
@@ -223,14 +273,14 @@ export default function DriverTrips() {
                   <TableHead>Status</TableHead>
                   <TableHead>Fare</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Duration</TableHead>
+                  <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {myTrips.map((trip) => (
+                {trips.map((trip) => (
                   <TableRow key={trip._id}>
                     <TableCell className="font-medium">
-                      {trip.from} → {trip.to}
+                      {trip.origin || trip.from} → {trip.destination || trip.to}
                     </TableCell>
                     <TableCell>{trip.passenger?.name || 'Unknown'}</TableCell>
                     <TableCell>
@@ -240,13 +290,10 @@ export default function DriverTrips() {
                     </TableCell>
                     <TableCell>${trip.fare || 'N/A'}</TableCell>
                     <TableCell>
-                      {new Date(trip.createdAt).toLocaleDateString()}
+                      {new Date(trip.scheduledTime).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      {trip.startTime && trip.endTime ? 
-                        `${Math.round((new Date(trip.endTime) - new Date(trip.startTime)) / (1000 * 60))} min` :
-                        'N/A'
-                      }
+                      {trip.notes || 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))}

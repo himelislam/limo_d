@@ -40,7 +40,7 @@ export default function BusinessDrivers() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => updateDriverStatus(id, status),
+    mutationFn: ({ id, status }) => updateDriverStatus({ id, status }),
     onSuccess: () => {
       queryClient.invalidateQueries(['business-drivers']);
     },
@@ -179,13 +179,14 @@ export default function BusinessDrivers() {
                   Expires: {new Date(driver.licenseExpiry).toLocaleDateString()}
                 </div>
               </div>
-
               <div className="flex gap-2">
                 {driver.status === 'active' ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateStatusMutation.mutate({ id: driver._id, status: 'inactive' })}
+                    onClick={() => {
+                      updateStatusMutation.mutate({ id: driver._id, status: 'inactive' });
+                    }}
                     disabled={updateStatusMutation.isPending}
                   >
                     <XCircle className="mr-1 h-4 w-4" />

@@ -386,7 +386,7 @@ export default function BusinessDashboard() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      <span className="font-medium">{trip.from} → {trip.to}</span>
+                      <span className="font-medium">{trip.origin} → {trip.destination}</span>
                       <Badge variant="destructive">Pending</Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -431,7 +431,7 @@ export default function BusinessDashboard() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      <span className="font-medium">{trip.from} → {trip.to}</span>
+                      <span className="font-medium">{trip.origin} → {trip.destination}</span>
                       <Badge variant={getStatusBadgeVariant(trip.status)}>
                         {trip.status.replace('-', ' ')}
                       </Badge>

@@ -100,7 +100,7 @@ export default function BusinessTrips() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  {trip.from} → {trip.to}
+                  {trip.origin} → {trip.destination}
                 </CardTitle>
                 <Badge variant={getStatusColor(trip.status)}>
                   {trip.status}

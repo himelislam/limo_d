@@ -21,6 +21,7 @@ export const updateDriver = async (id, driverData) => {
 };
 
 export const updateDriverStatus = async ({ id, status }) => {
+  console.log('updateDriverStatus called with:', { id, status });
   const response = await api.patch(`/drivers/${id}/status`, { status });
   return response.data;
 };

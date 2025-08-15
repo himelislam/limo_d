@@ -10,12 +10,14 @@ export default function DriverDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  const { data: tripsRes = [], isLoading } = useQuery({
+  const { data: tripsRes, isLoading } = useQuery({
     queryKey: ['driver-trips'],
     queryFn: getDriverTrips,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
-  const trips = tripsRes.data ?? [];
+  
+  // Handle the API response structure properly
+  const trips = tripsRes?.data || tripsRes || [];
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ tripId, status }) => updateTripStatus(tripId, status),
@@ -24,7 +26,7 @@ export default function DriverDashboard() {
     },
   });
 
-  const scheduledTrips = trips.filter(trip => ['scheduled', 'driver-assigned'].includes(trip.status));
+  const scheduledTrips = trips.filter(trip => ['scheduled', 'driver-assigned', 'confirmed'].includes(trip.status));
   const activeTrips = trips.filter(trip => ['on-the-way', 'started', 'in-progress'].includes(trip.status));
   const todayTrips = trips.filter(trip => 
     new Date(trip.scheduledTime).toDateString() === new Date().toDateString()
@@ -38,8 +40,10 @@ export default function DriverDashboard() {
     switch (status) {
       case 'scheduled': return 'default';
       case 'driver-assigned': return 'default';
+      case 'confirmed': return 'default';
       case 'on-the-way': return 'secondary';
       case 'started': return 'destructive';
+      case 'in-progress': return 'destructive';
       case 'completed': return 'outline';
       default: return 'default';
     }
@@ -48,12 +52,13 @@ export default function DriverDashboard() {
   const getNextAction = (trip) => {
     switch (trip.status) {
       case 'driver-assigned':
-        return { label: 'Start Trip', action: 'on-the-way', icon: Play };
       case 'scheduled':
+      case 'confirmed':
         return { label: 'Start Trip', action: 'on-the-way', icon: Play };
       case 'on-the-way':
         return { label: 'Pick Up Passenger', action: 'started', icon: User };
       case 'started':
+      case 'in-progress':
         return { label: 'Complete Trip', action: 'completed', icon: CheckCircle };
       default:
         return null;
@@ -112,7 +117,7 @@ export default function DriverDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${trips.filter(t => t.status === 'completed').reduce((sum, t) => sum + (t.fare || 0), 0)}
+              ${trips.filter(t => t.status === 'completed').reduce((sum, t) => sum + (t.fare || 0), 0).toFixed(2)}
             </div>
           </CardContent>
         </Card>
@@ -134,7 +139,9 @@ export default function DriverDashboard() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span className="font-medium">{trip.origin} → {trip.destination}</span>
+                        <span className="font-medium">
+                          {trip.origin || trip.from} → {trip.destination || trip.to}
+                        </span>
                         <Badge variant={getStatusBadgeVariant(trip.status)}>
                           {trip.status === 'driver-assigned' ? 'assigned' : trip.status}
                         </Badge>
@@ -145,6 +152,11 @@ export default function DriverDashboard() {
                       <div className="text-sm text-muted-foreground">
                         Scheduled: {new Date(trip.scheduledTime).toLocaleString()}
                       </div>
+                      {trip.fare && (
+                        <div className="text-sm font-medium text-green-600">
+                          Fare: ${trip.fare}
+                        </div>
+                      )}
                     </div>
                     {nextAction && (
                       <Button
@@ -182,7 +194,9 @@ export default function DriverDashboard() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span className="font-medium">{trip.origin} → {trip.destination}</span>
+                        <span className="font-medium">
+                          {trip.origin || trip.from} → {trip.destination || trip.to}
+                        </span>
                         <Badge variant={getStatusBadgeVariant(trip.status)}>
                           {trip.status}
                         </Badge>
@@ -196,6 +210,11 @@ export default function DriverDashboard() {
                       {trip.fare && (
                         <div className="text-sm font-medium text-green-600">
                           Fare: ${trip.fare}
+                        </div>
+                      )}
+                      {trip.notes && (
+                        <div className="text-sm text-muted-foreground">
+                          Notes: {trip.notes}
                         </div>
                       )}
                     </div>

@@ -54,7 +54,7 @@ export default function BusinessVehicles() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => updateVehicleStatus(id, status),
+    mutationFn: ( id, status ) => updateVehicleStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries(['business-vehicles']);
     },
