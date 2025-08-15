@@ -5,7 +5,8 @@ const {
   getVehicle,
   createVehicle,
   updateVehicle,
-  deleteVehicle
+  deleteVehicle,
+  updateVehicleStatus
 } = require('../controllers/vehicleController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -35,7 +36,7 @@ router.put('/:id', authorize('business_owner', 'admin'), updateVehicle);
 // @route   PATCH /api/vehicles/:id/status
 // @desc    Update vehicle status
 // @access  Private (Business Owner, Admin)
-// router.patch('/:id/status', authorize('business_owner', 'admin'), updateVehicleStatus);
+router.patch('/:id/status', authorize('business_owner', 'admin'), updateVehicleStatus);
 
 // @route   DELETE /api/vehicles/:id
 // @desc    Delete vehicle

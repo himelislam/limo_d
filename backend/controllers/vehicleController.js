@@ -237,3 +237,58 @@ exports.deleteVehicle = async (req, res) => {
     });
   }
 };
+
+// @desc    Update vehicle status
+// @route   PATCH /api/vehicles/:id/status
+// @access  Private (Business Owner/Admin)
+exports.updateVehicleStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    // Validate status
+    const validStatuses = ['active', 'inactive', 'maintenance', 'retired'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be one of: active, inactive, maintenance, out_of_service'
+      });
+    }
+
+    const vehicle = await Vehicle.findById(req.params.id);
+    
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        error: 'Vehicle not found'
+      });
+    }
+
+    // Check business ownership
+    if (req.user.role === 'business_owner') {
+      const user = await User.findById(req.user.id);
+      if (vehicle.business.toString() !== user.business.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: 'Not authorized to update this vehicle'
+        });
+      }
+    }
+
+    const updatedVehicle = await Vehicle.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate('business', 'name');
+
+    res.status(200).json({
+      success: true,
+      data: updatedVehicle
+    });
+  } catch (err) {
+    console.error('Error updating vehicle status:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+};
