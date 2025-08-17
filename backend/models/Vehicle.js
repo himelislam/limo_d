@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const vehicleSchema = new mongoose.Schema({
+  business: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Business',
+    required: true
+  },
   make: {
     type: String,
     required: true,
@@ -20,7 +25,6 @@ const vehicleSchema = new mongoose.Schema({
   licensePlate: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
     uppercase: true
   },
@@ -36,7 +40,7 @@ const vehicleSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'maintenance', 'retired'],
+    enum: ['active', 'inactive', 'maintenance', 'retired'],
     default: 'active'
   },
   mileage: {
@@ -53,5 +57,16 @@ const vehicleSchema = new mongoose.Schema({
     type: Date
   }
 }, { timestamps: true });
+
+// Compound index for business-specific license plates
+vehicleSchema.index({ business: 1, licensePlate: 1 }, { unique: true });
+
+// Add virtual field for frontend compatibility
+vehicleSchema.virtual('capacity').get(function() {
+  return this.seatingCapacity;
+});
+
+vehicleSchema.set('toJSON', { virtuals: true });
+vehicleSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);

@@ -26,15 +26,24 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'owner', 'driver', 'passenger'],
+    enum: ['super_admin', 'business_owner', 'driver', 'passenger'],
     default: 'passenger'
+  },
+  business: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Business',
+    required: function() {
+      return ['business_owner', 'driver'].includes(this.role);
+    }
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'available', 'on-trip', 'on-leave'],
-    default: function() {
-      return this.role === 'driver' ? 'available' : 'active';
-    }
+    enum: ['active', 'inactive', 'suspended'],
+    default: 'active'
+  },
+  isGuest: {
+    type: Boolean,
+    default: false
   },
   // Driver-specific fields
   licenseNumber: {
@@ -42,16 +51,15 @@ const userSchema = new mongoose.Schema({
     required: function() {
       return this.role === 'driver';
     },
-    unique: true,
     sparse: true
   },
   experience: {
     type: Number,
     default: 0,
-    min: 0
+    required: function() {
+      return this.role === 'driver';
+    }
   }
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

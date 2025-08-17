@@ -2,43 +2,66 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, registerUser, logoutUser, getCurrentUser } from '../api/auth';
 
-const AuthContext = createContext(undefined);
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          const response = await getCurrentUser(storedToken);
-          // Handle the response format from backend
-          const userData = response.data || response;
-          setUser(userData);
+          const userData = await getCurrentUser(storedToken);
+          setUser(userData.data);
           setToken(storedToken);
-        } catch (err) {
-          console.error('Auth check failed:', err);
+        } catch (error) {
+          console.error('Auth initialization failed:', error);
           localStorage.removeItem('token');
-          setUser(null);
           setToken(null);
         }
       }
       setLoading(false);
     };
-    checkAuth();
+
+    initAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      const { data, token } = await loginUser(email, password);
-      setUser(data);
-      setToken(token);
-      localStorage.setItem('token', token);
-      navigate(`/${data.role}/dashboard`);
+      const response = await loginUser(email, password);
+      const userData = response.data;
+      const authToken = response.token;
+      
+      setUser(userData);
+      setToken(authToken);
+      localStorage.setItem('token', authToken);
+      
+      // Navigate based on role (no business status checks needed)
+      const userRole = userData.role;
+      
+      if (userRole === 'business_owner') {
+        navigate('/business/dashboard');
+      } else if (userRole === 'super_admin') {
+        navigate('/admin/dashboard');
+      } else if (userRole === 'driver') {
+        navigate('/driver/dashboard');
+      } else if (userRole === 'passenger') {
+        navigate('/passenger/dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -47,34 +70,55 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const { data, token } = await registerUser(userData);
-      setUser(data);
-      setToken(token);
-      localStorage.setItem('token', token);
-      navigate(`/${data?.role}/dashboard`);
+      const response = await registerUser(userData);
+      const user = response.data;
+      const authToken = response.token;
+      
+      setUser(user);
+      setToken(authToken);
+      localStorage.setItem('token', authToken);
+      
+      // Passengers go to dashboard after registration
+      navigate('/passenger/dashboard');
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
     }
   };
 
-  const logout = () => {
-    logoutUser();
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
+  };
+
+  const value = {
+    user,
+    token,
+    loading,
+    login,
+    register,
+    logout,
+    setUser,
+    setToken,
+    isAuthenticated: !!token && !!user,
+    isBusinessOwner: user?.role === 'business_owner',
+    isDriver: user?.role === 'driver',
+    isPassenger: user?.role === 'passenger',
+    isSuperAdmin: user?.role === 'super_admin',
+    business: user?.business
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
 };

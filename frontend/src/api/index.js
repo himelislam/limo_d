@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,20 +23,26 @@ api.interceptors.request.use(
   }
 );
 
-// Handle auth errors consistently
+// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      localStorage.removeItem('user'); // Also remove user data
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    
-    // Standardize error response format
-    const errorMessage = error.response?.data?.error || error.response?.data?.message || 'An error occurred';
-    return Promise.reject(new Error(errorMessage));
+    return Promise.reject(error);
   }
 );
+
+export const handleApiResponse = (response) => {
+  return response.data;
+};
+
+export const handleApiError = (error) => {
+  const message = error.response?.data?.error || error.message || 'An error occurred';
+  throw new Error(message);
+};
 
 export default api;
