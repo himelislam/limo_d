@@ -59,8 +59,8 @@ const businessSchema = new mongoose.Schema({
   
   // Operating Hours
   operatingHours: {
-    start: String, // e.g., "06:00"
-    end: String,   // e.g., "22:00"
+    start: String, 
+    end: String, 
   },
   
   subscription: {

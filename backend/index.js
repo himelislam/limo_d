@@ -46,6 +46,12 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/bookings', require('./routes/bookings'));
 
+app.get("/", (req, res) => {
+  res.status(200).json({ 
+    message: "Welcome to the Fleet API"
+  });
+});
+
 
 const PORT = port || 5000;
 
