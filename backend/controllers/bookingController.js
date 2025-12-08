@@ -5,7 +5,7 @@ const Vehicle = require('../models/Vehicle');
 const emailService = require('../services/emailService');
 const { v4: uuidv4 } = require('uuid');
 
-// @desc    Create booking from widget (public)
+// @desc    Create booking from widget (public) route
 // @route   POST /api/bookings/widget/:widgetId
 // @access  Public
 exports.createWidgetBooking = async (req, res) => {
@@ -51,7 +51,7 @@ exports.createWidgetBooking = async (req, res) => {
 
     // Check if customer exists, if not create a guest user
     let passenger = await User.findOne({ email: customerEmail });
-    
+
     if (!passenger) {
       // Create guest passenger account
       passenger = await User.create({
@@ -120,15 +120,15 @@ exports.createWidgetBooking = async (req, res) => {
 exports.getBookings = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
-    const trips = await Trip.find({ 
+
+    const trips = await Trip.find({
       business: user.business,
       bookingSource: 'widget'
     })
-    .populate('passenger', 'name email phone')
-    .populate('driver', 'name email phone')
-    .populate('vehicle', 'make model licensePlate')
-    .sort({ createdAt: -1 });
+      .populate('passenger', 'name email phone')
+      .populate('driver', 'name email phone')
+      .populate('vehicle', 'make model licensePlate')
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -235,9 +235,9 @@ exports.sendQuoteToPassenger = async (req, res) => {
     // Send email to passenger
     try {
       await emailService.sendPriceConfirmationToPassenger(
-        updatedTrip, 
-        vehicle, 
-        proposedFare, 
+        updatedTrip,
+        vehicle,
+        proposedFare,
         confirmationToken
       );
     } catch (emailError) {
