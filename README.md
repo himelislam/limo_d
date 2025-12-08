@@ -165,4 +165,4 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 - [React](https://reactjs.org/) - A JavaScript library for building user interfaces
 - [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
 - [Express](https://expressjs.com/) - Fast, unopinionated, minimalist web framework for Node.js
-```
+
